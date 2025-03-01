@@ -2,6 +2,8 @@
 
 namespace Bolt\Extension\MichaelMezger\Espocrm\Importer;
 
+use Bolt\Storage\Entity\Taxonomy;
+use Cocur\Slugify\Slugify;
 use GuzzleHttp\Client;
 use Bolt\Storage\EntityManager;
 use Bolt\Storage\Entity\Content;
@@ -24,6 +26,7 @@ class EspocrmImporter
         'image1Id' => ['strategy' => 'image', 'field' => 'image'],
         'image2Id' => ['strategy' => 'image', 'field' => 'image2'],
         'image3Id' => ['strategy' => 'image', 'field' => 'image3'],
+        'tags' => ['strategy' => 'tags'],
     ];
 
     public function __construct(Client $guzzle, EntityManager $entityManager, Filesystem $filesystem, LoggerInterface $logger = null)
@@ -87,15 +90,47 @@ class EspocrmImporter
                 continue;
             }
 
-            if ($boltMapping['strategy'] === 'field') {
-                $content->set($boltMapping['field'], $espoContent[$espoField]);
-            } elseif ($boltMapping['strategy'] === 'image' && !$content->get($boltMapping['field'])) {
-                $filePath = sprintf('%s/%s', $espoContent['slug'], $espoContent[str_replace('Id', 'Name', $espoField)]);
-                $fileContent = $this->guzzle->get(sprintf('Attachment/file/%s', $espoContent[$espoField]))->getBody()->getContents();
-                $this->filesystem->getFilesystem('files')->write($filePath, $fileContent);
-                $content->set($boltMapping['field'], ['file' => $filePath]);
+            switch ($boltMapping['strategy']) {
+                case 'field':
+                    $content->set($boltMapping['field'], $espoContent[$espoField]);
+                    break;
+                case 'image':
+                    $filePath = sprintf('%s/%s', $espoContent['slug'], $espoContent[str_replace('Id', 'Name', $espoField)]);
+                    $fileContent = $this->guzzle->get(sprintf('Attachment/file/%s', $espoContent[$espoField]))->getBody()->getContents();
+                    $this->saveFileOrReplace($filePath, $fileContent);
+                    $content->set($boltMapping['field'], ['file' => $filePath]);
+                    break;
+                case 'tags':
+                    $taxonomies = $this->entityManager->createCollection(Taxonomy::class);
+                    foreach ($espoContent[$espoField] as $k => $tag) {
+                        $taxonomy = new Taxonomy([
+                            'name'         => $tag,
+                            'content_id'   => $content->getId(),
+                            'contenttype'  => (string) $content->getContenttype(),
+                            'taxonomytype' => 'tags',
+                            'slug'         => Slugify::create()->slugify($tag),
+                            'sortorder'    => $k,
+                        ]);
+                        $taxonomies->add($taxonomy);
+                    }
+
+                    $content->setTaxonomy($taxonomies);
             }
         }
+    }
+
+    protected function saveFileOrReplace(string $path, string $fileContent): void
+    {
+        $files = $this->filesystem->getFilesystem('files');
+        $file = $files->getFile($path);
+
+        // falls datei existiert und unveränder, dann mache nix
+        if ($file->exists() && $file->read() === $fileContent) {
+            return;
+        }
+
+        $file->delete();
+        $files->write($path, $fileContent);
     }
 
     protected function updateEspo(array $espoContent): void
