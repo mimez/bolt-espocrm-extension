@@ -1,5 +1,5 @@
 {
-    "name": "bolt/bolt-extension-starter",
+    "name": "michaelmezger/bolt-espocrm-extension",
     "description": "",
     "type": "bolt-extension",
     "keywords": [
@@ -13,25 +13,25 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "",
-            "email": "you@example.com"
+            "name": "Michael Mezger",
+            "email": "michael@michaelmezger.de"
         }
     ],
     "minimum-stability": "dev",
     "prefer-stable": true,
     "autoload": {
         "psr-4": {
-            "Bolt\\Extension\\YourName\\ExtensionName\\": "src"
+            "Bolt\\Extension\\MichaelMezger\\Espocrm\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Bolt\\Extension\\YourName\\ExtensionName\\Tests\\": "tests",
+            "Bolt\\Extension\\MichaelMezger\\Espocrm\\Tests\\": "tests",
             "Bolt\\Tests\\": "vendor/bolt/bolt/tests/phpunit/unit/"
         }
     },
     "extra": {
         "bolt-assets": "web",
-        "bolt-class": "Bolt\\Extension\\YourName\\ExtensionName\\ExtensionNameExtension"
+        "bolt-class": "Bolt\\Extension\\MichaelMezger\\Espocrm\\EspocrmExtension"
     }
 }
