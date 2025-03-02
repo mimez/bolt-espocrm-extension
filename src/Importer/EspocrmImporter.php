@@ -128,8 +128,10 @@ class EspocrmImporter
         if ($file->exists() && $file->read() === $fileContent) {
             return;
         }
+        if ($file->exists()) {
+            $file->delete();
+        }
 
-        $file->delete();
         $files->write($path, $fileContent);
     }
 
