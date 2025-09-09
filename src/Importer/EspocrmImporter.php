@@ -103,12 +103,15 @@ class EspocrmImporter
                 case 'tags':
                     $taxonomies = $this->entityManager->createCollection(Taxonomy::class);
                     foreach ($espoContent[$espoField] as $k => $tag) {
+                        // Remove leading hashtag if present
+                        $cleanTag = ltrim($tag, '#');
+                        
                         $taxonomy = new Taxonomy([
-                            'name'         => $tag,
+                            'name'         => $cleanTag,
                             'content_id'   => $content->getId(),
                             'contenttype'  => (string) $content->getContenttype(),
                             'taxonomytype' => 'tags',
-                            'slug'         => Slugify::create()->slugify($tag),
+                            'slug'         => Slugify::create()->slugify($cleanTag),
                             'sortorder'    => $k,
                         ]);
                         $taxonomies->add($taxonomy);
